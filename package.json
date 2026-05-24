@@ -1,0 +1,34 @@
+{
+  "name": "@visara/core",
+  "version": "0.1.0",
+  "description": "Scan any image. Get structured data. Zero config required.",
+  "main": "bridge/index.js",
+  "types": "bridge/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "keywords": [
+    "react-native",
+    "expo",
+    "ocr",
+    "image-scanning",
+    "ai",
+    "vision",
+    "structured-data",
+    "ios"
+  ],
+  "author": "Harshith Harijeevan",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/harshithharijeevan/visara"
+  },
+  "peerDependencies": {
+    "expo": ">=50.0.0",
+    "react-native": ">=0.73.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

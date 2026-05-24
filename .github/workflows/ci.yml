@@ -1,0 +1,101 @@
+# CI — Continuous Integration
+#
+# LEARNING — What CI does:
+# Every time code is pushed or a pull request is opened,
+# this workflow runs automatically on GitHub's servers.
+# It compiles the code and runs all tests.
+# If anything fails, GitHub marks the commit as broken.
+# This prevents broken code from ever reaching the main branch.
+#
+# LEARNING — YAML syntax:
+# GitHub Actions workflows are written in YAML.
+# Indentation matters — two spaces per level.
+# `on:` defines WHEN the workflow runs.
+# `jobs:` defines WHAT it does.
+# `steps:` are the individual commands inside a job.
+
+name: CI
+
+# WHEN to run this workflow
+on:
+  push:
+    branches: [main]          # every push to main
+  pull_request:
+    branches: [main]          # every PR targeting main
+
+# WHAT to run
+jobs:
+
+  # ─────────────────────────────────────────
+  # Job 1: Build and test the Swift package
+  # ─────────────────────────────────────────
+  swift-tests:
+    name: Swift Tests
+
+    # LEARNING — runs-on:
+    # Swift can only compile on macOS.
+    # GitHub provides hosted Mac runners (macos-latest).
+    # Linux/Windows runners cannot build iOS/macOS Swift packages.
+    runs-on: macos-latest
+
+    steps:
+      # Step 1: Check out the code
+      # LEARNING — actions/checkout:
+      # This is a pre-built action from GitHub's marketplace.
+      # It clones your repository onto the runner machine.
+      # Without this, the runner has no code to work with.
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Print Swift version (useful for debugging CI failures)
+      - name: Print Swift version
+        run: swift --version
+
+      # Step 3: Build the package
+      # LEARNING — swift build:
+      # Compiles all Swift source files.
+      # Fails fast if there are any syntax or type errors.
+      # We run build separately from test so we know exactly
+      # whether it's a compilation error or a test failure.
+      - name: Build
+        run: swift build -v
+
+      # Step 4: Run all tests
+      # LEARNING — swift test:
+      # Discovers and runs every XCTestCase in the tests/ folder.
+      # Exit code 0 = all tests passed.
+      # Exit code non-zero = at least one test failed.
+      # GitHub reads the exit code to mark the check as pass/fail.
+      - name: Run tests
+        run: swift test -v
+
+  # ─────────────────────────────────────────
+  # Job 2: Lint and type-check the TypeScript bridge
+  # ─────────────────────────────────────────
+  typescript-check:
+    name: TypeScript Check
+    runs-on: ubuntu-latest   # TypeScript can run anywhere
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # LEARNING — actions/setup-node:
+      # Installs a specific version of Node.js on the runner.
+      # We pin to Node 20 (LTS) for stability.
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # Install dependencies declared in package.json
+      - name: Install dependencies
+        run: npm ci   # ci is faster and stricter than npm install
+
+      # Type-check the bridge TypeScript
+      # LEARNING — tsc --noEmit:
+      # Runs TypeScript's type checker without producing output files.
+      # Catches type errors in bridge/index.ts without building anything.
+      - name: TypeScript type check
+        run: npx tsc --noEmit

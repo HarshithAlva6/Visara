@@ -1,0 +1,116 @@
+# Release — Publishes to npm on version tag
+#
+# LEARNING — Release workflow:
+# This workflow only runs when you push a version tag (e.g. v1.0.0).
+# It first runs ALL tests — if any fail, it stops. Nothing gets published.
+# Only after tests pass does it publish the package to npm.
+#
+# LEARNING — Secrets:
+# API keys and tokens should never be hardcoded in code.
+# GitHub Secrets store sensitive values encrypted.
+# We reference them as ${{ secrets.SECRET_NAME }}.
+# Set them at: GitHub repo → Settings → Secrets and variables → Actions
+#
+# HOW TO TRIGGER A RELEASE:
+# 1. Update version in package.json (e.g. "version": "1.0.0")
+# 2. Commit: git commit -am "release: v1.0.0"
+# 3. Tag:    git tag v1.0.0
+# 4. Push:   git push && git push --tags
+# GitHub sees the tag, runs this workflow automatically.
+
+name: Release
+
+# Only run on version tags (v1.0.0, v1.2.3, etc.)
+on:
+  push:
+    tags:
+      - 'v*'    # matches v1.0.0, v2.0.0-beta, etc.
+
+jobs:
+
+  # ─────────────────────────────────────────
+  # Job 1: Run tests before publishing
+  # Never publish broken code
+  # ─────────────────────────────────────────
+  test:
+    name: Run Tests Before Release
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: swift build
+
+      - name: Run Swift tests
+        run: swift test
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+  # ─────────────────────────────────────────
+  # Job 2: Publish to npm
+  # Only runs if tests pass (needs: test)
+  # ─────────────────────────────────────────
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+
+    # LEARNING — needs:
+    # This job will not start until the `test` job completes successfully.
+    # If tests fail, `publish` never runs.
+    # This is the safety gate — broken code never reaches npm.
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          # LEARNING — registry-url:
+          # Tells npm which registry to publish to.
+          # npmjs.com is the public registry.
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Build the TypeScript bridge before publishing
+      - name: Build bridge
+        run: npm run build
+
+      # LEARNING — npm publish:
+      # Publishes the package defined in package.json to the npm registry.
+      # NODE_AUTH_TOKEN authenticates with npm using a secret token.
+      # Generate a token at: npmjs.com → Account → Access Tokens
+      # Add it to GitHub Secrets as NPM_TOKEN.
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # Create a GitHub Release with auto-generated notes
+      # LEARNING — gh CLI:
+      # GitHub's official CLI is pre-installed on all GitHub runners.
+      # `gh release create` creates a release page on GitHub automatically.
+      - name: Create GitHub Release
+        run: |
+          gh release create ${{ github.ref_name }} \
+            --generate-notes \
+            --title "Visara ${{ github.ref_name }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # auto-provided by GitHub
