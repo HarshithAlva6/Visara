@@ -24,8 +24,7 @@ let package = Package(
         .target(
             name: "Visara",
             path: ".",
-            sources: ["scanner", "providers", "models"],
-            publicHeadersPath: "."
+            sources: ["scanner", "providers", "models"]
         ),
         // Test target
         .testTarget(
