@@ -1,3 +1,5 @@
+import Foundation
+
 /// BuiltInProvider is the zero-config fallback that works on every device.
 ///
 /// No AI. No API keys. No internet. No cost.

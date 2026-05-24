@@ -1,3 +1,5 @@
+import Foundation
+
 /// All errors that Visara can throw — typed, descriptive, and catchable.
 ///
 /// LEARNING — Error enums with associated values:

@@ -133,6 +133,63 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(config.timeout, 30, accuracy: 0.001)
     }
 
+    // MARK: - VisaraError Tests
+
+    func test_visaraError_ocrFailed_errorDescription() {
+        let error = VisaraError.ocrFailed("bad data")
+        XCTAssertEqual(error.errorDescription, "OCR failed: bad data")
+    }
+
+    func test_visaraError_lowConfidence_errorDescription() {
+        let error = VisaraError.lowConfidence(0.25)
+        XCTAssertEqual(error.errorDescription, "Image confidence too low (25%). Try a clearer image.")
+    }
+
+    func test_visaraError_noProviderAvailable_errorDescription() {
+        let error = VisaraError.noProviderAvailable
+        XCTAssertNotNil(error.errorDescription)
+        XCTAssertFalse(error.errorDescription!.isEmpty)
+    }
+
+    func test_visaraError_extractionFailed_errorDescription() {
+        let error = VisaraError.extractionFailed("network error")
+        XCTAssertEqual(error.errorDescription, "Extraction failed: network error")
+    }
+
+    func test_visaraError_timeout_errorDescription() {
+        let error = VisaraError.timeout
+        XCTAssertNotNil(error.errorDescription)
+        XCTAssertFalse(error.errorDescription!.isEmpty)
+    }
+
+    func test_visaraError_missingAPIKey_errorDescription() {
+        let error = VisaraError.missingAPIKey("Claude")
+        XCTAssertEqual(error.errorDescription, "Missing API key for Claude. Set it via VisaraConfig.")
+    }
+
+    // MARK: - Custom EntityType Tests
+
+    func test_visaraResult_customEntityType_filtersByAssociatedValue() {
+        let entities: [VisaraEntity] = [
+            VisaraEntity(type: .custom("eventName"), value: "WWDC", confidence: 0.9),
+            VisaraEntity(type: .custom("dressCode"), value: "Smart Casual", confidence: 0.9),
+            VisaraEntity(type: .url, value: "apple.com", confidence: 0.95)
+        ]
+        let metadata = VisaraMetadata(provider: .builtIn, processingTime: 0.1, ocrConfidence: 0.9)
+        let result = VisaraResult(rawText: "", entities: entities, metadata: metadata)
+
+        let eventNames = result.entities(ofType: .custom("eventName"))
+        XCTAssertEqual(eventNames.count, 1)
+        XCTAssertEqual(eventNames.first?.value, "WWDC")
+
+        let dressCodes = result.entities(ofType: .custom("dressCode"))
+        XCTAssertEqual(dressCodes.count, 1)
+
+        // A different custom label should not match
+        let unknown = result.entities(ofType: .custom("other"))
+        XCTAssertTrue(unknown.isEmpty)
+    }
+
     func test_visaraConfig_customInit_storesValues() {
         // Given / When
         let config = VisaraConfig(

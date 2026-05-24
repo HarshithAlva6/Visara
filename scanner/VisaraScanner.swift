@@ -51,6 +51,21 @@ public final class VisaraScanner {
     /// print(result.phones)  // ["512-555-0123"]
     /// ```
     public func scan(image: UIImage) async throws -> VisaraResult {
+        try await withThrowingTaskGroup(of: VisaraResult.self) { group in
+            group.addTask { try await self.performScan(image: image) }
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(self.config.timeout * 1_000_000_000))
+                throw VisaraError.timeout
+            }
+            guard let result = try await group.next() else {
+                throw VisaraError.ocrFailed("Unexpected empty task group")
+            }
+            group.cancelAll()
+            return result
+        }
+    }
+
+    private func performScan(image: UIImage) async throws -> VisaraResult {
         let startTime = Date()
 
         // Step 1: Extract raw text from image using Vision OCR

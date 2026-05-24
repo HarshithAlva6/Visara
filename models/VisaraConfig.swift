@@ -1,3 +1,5 @@
+import Foundation
+
 /// VisaraConfig controls how the library behaves.
 ///
 /// All fields have sensible defaults — the library works

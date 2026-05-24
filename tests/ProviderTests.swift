@@ -120,6 +120,43 @@ final class ProviderTests: XCTestCase {
         }
     }
 
+    func test_builtInProvider_detectsMultipleEmails() async throws {
+        let provider = BuiltInProvider()
+        let text = "Contact alice@example.com or bob@example.com for info"
+
+        let entities = try await provider.extract(from: text)
+
+        let emails = entities.filter { $0.type == .email }
+        XCTAssertEqual(emails.count, 2)
+        XCTAssertTrue(emails.contains { $0.value == "alice@example.com" })
+        XCTAssertTrue(emails.contains { $0.value == "bob@example.com" })
+    }
+
+    func test_builtInProvider_doesNotDetectPrices() async throws {
+        // NSDataDetector has no price type — this is a known limitation.
+        // AI providers (Claude, Gemini, Foundation Models) cover prices.
+        let provider = BuiltInProvider()
+        let text = "Tickets: $15 presale / $25 door"
+
+        let entities = try await provider.extract(from: text)
+
+        let prices = entities.filter { $0.type == .price }
+        XCTAssertTrue(prices.isEmpty, "BuiltInProvider does not detect prices — use an AI provider for that")
+    }
+
+    func test_builtInProvider_bareURLNotDetected_httpsURLDetected() async throws {
+        // NSDataDetector reliably detects full https:// URLs.
+        // Bare domains like "nike.com" may or may not be detected depending on iOS version.
+        let provider = BuiltInProvider()
+        let text = "Visit https://nike.com for details"
+
+        let entities = try await provider.extract(from: text)
+
+        let urls = entities.filter { $0.type == .url }
+        XCTAssertFalse(urls.isEmpty, "https:// URL must be detected")
+        XCTAssertTrue(urls.contains { $0.value.contains("nike.com") })
+    }
+
     // MARK: - ExtractionProvider Protocol Tests (using mocks)
 
     func test_mockSuccessProvider_returnsPresetEntities() async throws {

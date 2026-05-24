@@ -5,6 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "Visara",
+    defaultLocalization: "en",
     platforms: [
         // Minimum iOS 16 for broad device support
         // Foundation Models (on-device AI) requires iOS 26 — handled at runtime
@@ -24,6 +25,7 @@ let package = Package(
         .target(
             name: "Visara",
             path: ".",
+            exclude: ["ios", "bridge", "node_modules", ".github"],
             sources: ["scanner", "providers", "models"]
         ),
         // Test target

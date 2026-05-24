@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 @testable import Visara
 
 /// End-to-end tests for VisaraScanner.
@@ -155,6 +156,25 @@ final class ScannerTests: XCTestCase {
             result.phones.contains { $0.contains("512") },
             "Should detect phone number. Found: \(result.phones)"
         )
+    }
+
+    // MARK: - Timeout Tests
+
+    func test_scanner_timeout_throwsTimeoutError() async {
+        // Given — 1ms timeout is shorter than any real OCR run
+        let config = VisaraConfig(provider: .builtIn, timeout: 0.001)
+        let scanner = VisaraScanner(config: config)
+        let image = makeTestImage(withText: TestFixtures.simpleText)
+
+        // When / Then
+        do {
+            _ = try await scanner.scan(image: image)
+            XCTFail("Expected VisaraError.timeout")
+        } catch VisaraError.timeout {
+            // Expected
+        } catch {
+            XCTFail("Wrong error type: \(error)")
+        }
     }
 
     // MARK: - Test Helpers

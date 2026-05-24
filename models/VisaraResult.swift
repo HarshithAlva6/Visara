@@ -1,3 +1,5 @@
+import Foundation
+
 /// VisaraResult is the single output contract for every scan.
 ///
 /// Regardless of which provider ran (on-device AI, Claude, Gemini,
