@@ -37,23 +37,4 @@ public protocol ExtractionProvider {
     func extract(from text: String) async throws -> [VisaraEntity]
 }
 
-/// Errors that Visara can throw during a scan
-public enum VisaraError: Error {
-    /// The image could not be read by the OCR engine
-    case ocrFailed(String)
-
-    /// OCR succeeded but confidence was too low to be useful
-    case lowConfidence(Double)
-
-    /// No provider is available (no API key, device not eligible)
-    case noProviderAvailable
-
-    /// The chosen provider failed to extract entities
-    case extractionFailed(String)
-
-    /// The scan took longer than the configured timeout
-    case timeout
-
-    /// API key is missing for the requested provider
-    case missingAPIKey(String)
-}
+// VisaraError is defined in scanner/VisaraError.swift
