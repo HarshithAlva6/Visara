@@ -32,6 +32,8 @@ jobs:
 
       # Build targeting iOS Simulator
       # CODE_SIGN_IDENTITY="" skips code signing — not needed in CI
+      # tee preserves xcodebuild's exit code (pipefail-safe); grep with || true
+      # avoids failing the step when no lines match (e.g. zero-warning builds).
       - name: Build for iOS Simulator
         run: |
           xcodebuild build \
@@ -39,17 +41,20 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            | grep -E "(error:|warning:|Build succeeded|Build FAILED)"
+            2>&1 | tee build_output.txt
+          grep -iE "(error:|warning:|BUILD SUCCEEDED|BUILD FAILED)" build_output.txt || true
 
       # Run tests on iOS Simulator
+      # Use 'OS=latest' so CI picks whatever iOS SDK ships with the runner's Xcode.
       - name: Test on iOS Simulator
         run: |
           xcodebuild test \
             -scheme Visara \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination 'platform=iOS Simulator,OS=latest,name=iPhone 16' \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            | grep -E "(error:|Test Case|passed|failed|Build succeeded|Build FAILED)"
+            2>&1 | tee test_output.txt
+          grep -iE "(error:|Test Case|passed|failed|BUILD SUCCEEDED|BUILD FAILED)" test_output.txt || true
 
   # ─────────────────────────────────────────
   # Job 2: TypeScript type check

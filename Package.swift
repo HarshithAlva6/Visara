@@ -25,7 +25,7 @@ let package = Package(
         .target(
             name: "Visara",
             path: ".",
-            exclude: ["ios", "bridge", "node_modules", ".github"],
+            exclude: ["ios", "bridge", "node_modules", ".github", "example"],
             sources: ["scanner", "providers", "models"]
         ),
         // Test target
