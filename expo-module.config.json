@@ -1,6 +1,8 @@
 {
   "platforms": ["ios"],
   "ios": {
-    "modules": ["VisaraModule"]
+    "modules": ["VisaraModule"],
+    "swiftModuleNames": ["Visara"],
+    "podspecPath": "Visara.podspec"
   }
 }

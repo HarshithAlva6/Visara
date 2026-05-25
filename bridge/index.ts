@@ -171,10 +171,18 @@ export async function scan(imagePath: string): Promise<VisaraResult> {
 }
 
 /**
+ * Scan a programmatically generated test image.
+ * No image path required — useful for verifying the pipeline works.
+ */
+export async function scanDemo(): Promise<VisaraResult> {
+  return VisaraNative.scanDemo();
+}
+
+/**
  * Default export — use as a namespace if preferred.
  *
  * @example
  * import Visara from '@visara/core';
  * const result = await Visara.scan(imagePath);
  */
-export default { configure, scan };
+export default { configure, scan, scanDemo };

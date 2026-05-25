@@ -81,9 +81,33 @@ public class VisaraModule: Module {
             // Convert VisaraResult to a bridge-safe dictionary
             return self.serializeResult(result)
         }
+
+        // MARK: - scanDemo()
+        // Scans a programmatically generated test image — no file path needed.
+        // Useful for verifying the pipeline works without a real photo.
+        AsyncFunction("scanDemo") { () -> [String: Any] in
+            let image = self.makeDemoImage()
+            let result = try await self.scanner.scan(image: image)
+            return self.serializeResult(result)
+        }
     }
 
     // MARK: - Private helpers
+
+    /// Creates a UIImage with sample event-flyer text for demo/testing purposes.
+    private func makeDemoImage() -> UIImage {
+        let text = "Summer Rooftop Party\nSaturday June 14th 8PM\nlustrepearl.com/tickets\nCall 512-555-0123\ninfo@lustrepearl.com\n@lustrepearleast"
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 600, height: 300))
+        return renderer.image { ctx in
+            UIColor.white.setFill()
+            ctx.fill(CGRect(x: 0, y: 0, width: 600, height: 300))
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 20),
+                .foregroundColor: UIColor.black
+            ]
+            text.draw(at: CGPoint(x: 20, y: 20), withAttributes: attrs)
+        }
+    }
 
     /// Loads a UIImage from a file path string.
     ///

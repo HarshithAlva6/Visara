@@ -17,9 +17,10 @@ Written in plain language. Updated as we build.
 8. [URLSession — Networking](#8-urlsession)
 9. [Error Handling in Swift](#9-error-handling)
 10. [Apple Foundation Models](#10-foundation-models)
-11. [Expo Bridge](#11-expo-bridge) — upcoming
-12. [Unit Testing](#12-unit-testing) — upcoming
-13. [CI/CD](#13-cicd) — upcoming
+11. [Expo Bridge](#11-expo-bridge)
+12. [Running the Example App — Key Gotchas](#12-running-the-example-app--key-gotchas)
+13. [Unit Testing](#13-unit-testing)
+14. [CI/CD](#14-cicd)
 
 ---
 
@@ -337,7 +338,68 @@ It's the modern standard for native modules in 2026.
 
 ---
 
-## 12. Unit Testing
+## 12. Running the Example App — Key Gotchas
+
+Building an Expo native module example app with a local `file:../` dependency has several non-obvious traps.
+
+### Visara.podspec — required for native linking
+CocoaPods needs a `.podspec` at the package root to compile Swift source files.
+Without it, `pod install` succeeds but the native module is never compiled in.
+
+### expo-module.config.json — required fields
+```json
+{
+  "ios": {
+    "modules": ["VisaraModule"],
+    "swiftModuleNames": ["Visara"],
+    "podspecPath": "Visara.podspec"
+  }
+}
+```
+- `swiftModuleNames` — needed so `ExpoModulesProvider.swift` emits `import Visara`
+- `podspecPath` — tells expo-modules-autolinking where the podspec lives
+
+Without `podspecPath`, autolinking's `listFilesInDirectories` only searches inside subdirectories, so a podspec at the package root is invisible to it.
+
+### Metro can't see files outside the project root
+Metro only watches the `example/` directory by default.
+`metro.config.js` must add `watchFolders` and `nodeModulesPaths`:
+```js
+config.watchFolders = [packageRoot];
+config.resolver.nodeModulesPaths = [
+  path.resolve(projectRoot, 'node_modules'),
+  path.resolve(packageRoot, 'node_modules'),
+];
+```
+Without this, Metro reports "none of these files exist" even when they do.
+
+### Metro resolveRequest — explicit override for local symlinks
+Even with `watchFolders`, Metro may not follow `file:../` symlinks when resolving the package entry point. Add an explicit override:
+```js
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === '@visara/core') {
+    return { filePath: path.resolve(packageRoot, 'bridge', 'index.js'), type: 'sourceFile' };
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
+```
+
+### Swift 6 compatibility patches
+Expo SDK 56 ships with Swift files that use `weak let` — illegal in Swift 6.
+Two packages need patches (applied automatically via `patch-package` on `npm install`):
+- `expo-modules-jsi` — 14 files with `weak let` → `weak var` + `nonisolated(unsafe)`
+- `expo-modules-core` — `SharedObjectRegistry.swift` same issue
+
+### Podfile — force Swift 5 and deployment target
+```ruby
+config.build_settings['SWIFT_VERSION'] = '5.0'
+config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.4'
+```
+Without these, some pods compile in Swift 6 strict mode and fail.
+
+---
+
+## 13. Unit Testing
 
 ### XCTest — the framework
 Apple's built-in testing framework. Every test class inherits from XCTestCase.
@@ -434,7 +496,7 @@ This creates a real UIImage with real text that OCREngine can process.
 
 ---
 
-## 13. CI/CD with GitHub Actions
+## 14. CI/CD with GitHub Actions
 
 ### What CI/CD means
 - **CI** — Continuous Integration: automatically build and test on every push

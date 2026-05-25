@@ -6,12 +6,11 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "outDir": "./dist",
-    "rootDir": "./bridge",
+    "outDir": "./bridge",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true
   },
-  "include": ["bridge/**/*"],
+  "include": ["bridge/index.ts"],
   "exclude": ["node_modules", "dist", "example", "tests"]
 }
